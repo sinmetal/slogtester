@@ -5,19 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 	"time"
 )
 
 // Entry is Stackdriver Logging Entry
 type Entry struct {
-	LogName     string            `json:"logName"`
-	Resource    MonitoredResource `json:"resource"`
-	Timestamp   time.Time         `json:"timestamp"`
-	Severity    string            `json:"severity"`
-	severity    Severity
-	JSONPayload interface{} `json:"jsonPayload"`
+	InsertID         string            `json:"insertId"`
+	Severity         string            `json:"severity"`
+	Labels           map[string]string `json:"labels"`
+	LogName          string            `json:"logName"`
+	ReceiveTimestamp time.Time         `json:"receiveTimestamp"`
+	Resource         MonitoredResource `json:"resource"`
+	JSONPayload      interface{}       `json:"jsonPayload"`
+	Timestamp        time.Time         `json:"timestamp"`
 }
 
 // MonitoredResource is Log Resource
@@ -27,79 +28,10 @@ type MonitoredResource struct {
 	Labels map[string]string `json:"labels"`
 }
 
-// Timestamp is Stackdriver Logging Timestamp
-type Timestamp struct {
-	Seconds int64 `json:"seconds"`
-	Nanos   int   `json:"nanos"`
-}
-
 // Log is Log Object
 type Log struct {
-	Entry    Entry    `json:"entry"`
-	Messages []string `json:"messages"`
-}
-
-// Info is Add Log Message for Info Level
-func (l *Log) Info(message string) {
-	m := strings.Replace(message, "\n", "", -1)
-	l.Messages = append(l.Messages, m)
-	l.setSeverity(INFO)
-}
-
-// Infof is Add Log Message for Info Level
-func (l *Log) Infof(format string, v ...interface{}) {
-	l.Info(fmt.Sprintf(format, v...))
-}
-
-// Error is Add Log Message for Error Level
-func (l *Log) Error(message string) {
-	m := strings.Replace(message, "\n", "", -1)
-	l.Messages = append(l.Messages, m)
-	l.setSeverity(ERROR)
-}
-
-// Errorf is Add Log Message for Error Level
-func (l *Log) Errorf(format string, v ...interface{}) {
-	l.Error(fmt.Sprintf(format, v...))
-}
-
-// Flush is Flush to Log
-func (l *Log) Flush() {
-	j, err := l.flush()
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	fmt.Printf("%s\n", string(j))
-}
-
-func (l *Log) setSeverity(severity Severity) {
-	if l.Entry.Severity == "" {
-		l.Entry.severity = severity
-		l.Entry.Severity = severity.String()
-		return
-	}
-
-	if l.Entry.severity < severity {
-		l.Entry.severity = severity
-		l.Entry.Severity = severity.String()
-		return
-	}
-}
-
-func (l *Log) flush() ([]byte, error) {
-	b, err := json.Marshal(l.Messages)
-	if err == nil {
-		// l.Entry.Message = string(b)
-	} else {
-		return nil, err
-	}
-
-	b, err = json.Marshal(l.Entry)
-	if err == nil {
-		l.Messages = nil
-	}
-	return b, err
+	Entry    Entry `json:"entry"`
+	Messages []string
 }
 
 var logMap map[context.Context]*Log
@@ -128,16 +60,20 @@ func getLogMap(ctx context.Context) (*Log, bool) {
 func Info(ctx context.Context, message string) {
 	e, ok := getLogMap(ctx)
 	if !ok {
+		labels := map[string]string{"hoge": "fuga"}
 		e = &Log{
 			Entry: Entry{
-				LogName: "projects/metal-tile-dev1/logs/slog",
+				InsertID:         time.Now().String(),
+				Labels:           labels,
+				LogName:          "projects/metal-tile-dev1/logs/slog",
+				ReceiveTimestamp: time.Now(),
 				Resource: MonitoredResource{
-					Type: "slog",
+					Type:   "slog",
+					Labels: labels,
 				},
-				Severity:  "INFO",
+				Severity:  "WARNING",
 				Timestamp: time.Now(),
 			},
-			Messages: []string{},
 		}
 		go log(ctx)
 	}
