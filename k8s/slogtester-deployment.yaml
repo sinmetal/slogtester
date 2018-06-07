@@ -12,5 +12,5 @@ spec:
         name: slogtester
     spec:
       containers:
-      - image: gcr.io/metal-tile-dev1/sinmetal/slogtester:latest
+      - image: gcr.io/metal-tile-dev1/sinmetal/slogtester/master:latest
         name: slogtester
