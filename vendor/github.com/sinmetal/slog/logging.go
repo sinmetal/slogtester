@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -94,13 +95,29 @@ func (l *Log) flush() ([]byte, error) {
 
 var logMap map[context.Context]*Log
 
+var m sync.RWMutex
+
 func init() {
 	logMap = make(map[context.Context]*Log)
+	m = sync.RWMutex{}
+}
+
+func setLogMap(ctx context.Context, log *Log) {
+	m.Lock()
+	defer m.Unlock()
+	logMap[ctx] = log
+}
+
+func getLogMap(ctx context.Context) (*Log, bool) {
+	m.RLock()
+	defer m.RUnlock()
+	e, ok := logMap[ctx]
+	return e, ok
 }
 
 // Info is output info level Log
 func Info(ctx context.Context, message string) {
-	e, ok := logMap[ctx]
+	e, ok := getLogMap(ctx)
 	if !ok {
 		e = &Log{
 			Entry: Entry{
@@ -112,7 +129,7 @@ func Info(ctx context.Context, message string) {
 		go log(ctx)
 	}
 	e.Messages = append(e.Messages, message)
-	logMap[ctx] = e
+	setLogMap(ctx, e)
 }
 
 func log(ctx context.Context) {

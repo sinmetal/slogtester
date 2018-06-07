@@ -5,7 +5,7 @@
   branch = "feature/id/1"
   name = "github.com/sinmetal/slog"
   packages = ["."]
-  revision = "86d7b23b7f5a87b723f6db03ab6eef7cb501f99c"
+  revision = "fa947a186bdff0af89aba85bc74a237daee9ce25"
 
 [solve-meta]
   analyzer-name = "dep"
