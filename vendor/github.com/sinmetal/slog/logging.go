@@ -12,10 +12,19 @@ import (
 
 // Entry is Stackdriver Logging Entry
 type Entry struct {
-	Timestamp   time.Time `json:"timestamp"`
-	Severity    string    `json:"severity"`
+	LogName     string            `json:"logName"`
+	Resource    MonitoredResource `json:"resource"`
+	Timestamp   time.Time         `json:"timestamp"`
+	Severity    string            `json:"severity"`
 	severity    Severity
 	JSONPayload interface{} `json:"jsonPayload"`
+}
+
+// MonitoredResource is Log Resource
+// https://cloud.google.com/logging/docs/reference/v2/rest/v2/MonitoredResource
+type MonitoredResource struct {
+	Type   string            `json:"type"`
+	Labels map[string]string `json:"labels"`
 }
 
 // Timestamp is Stackdriver Logging Timestamp
@@ -121,6 +130,10 @@ func Info(ctx context.Context, message string) {
 	if !ok {
 		e = &Log{
 			Entry: Entry{
+				LogName: "projects/metal-tile-dev1/logs/slog",
+				Resource: MonitoredResource{
+					Type: "slog",
+				},
 				Severity:  "INFO",
 				Timestamp: time.Now(),
 			},
