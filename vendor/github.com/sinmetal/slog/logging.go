@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sync"
 	"time"
 )
 
@@ -34,71 +33,50 @@ type Log struct {
 	Messages []string
 }
 
-var logMap map[context.Context]*Log
+type contextLogKey struct{}
 
-var m sync.RWMutex
+// WithLog is context.ValueにLogを入れたものを返す
+// Log周期開始時に利用する
+func WithLog(ctx context.Context) context.Context {
+	labels := map[string]string{"hoge": "fuga"}
+	l := &Log{
+		Entry: Entry{
+			InsertID:         time.Now().String(),
+			Labels:           labels,
+			LogName:          "projects/metal-tile-dev1/logs/slog",
+			ReceiveTimestamp: time.Now(),
+			Resource: MonitoredResource{
+				Type:   "slog",
+				Labels: labels,
+			},
+			Severity:  "WARNING",
+			Timestamp: time.Now(),
+		},
+	}
 
-func init() {
-	logMap = make(map[context.Context]*Log)
-	m = sync.RWMutex{}
-}
-
-func setLogMap(ctx context.Context, log *Log) {
-	m.Lock()
-	defer m.Unlock()
-	logMap[ctx] = log
-}
-
-func getLogMap(ctx context.Context) (*Log, bool) {
-	m.RLock()
-	defer m.RUnlock()
-	e, ok := logMap[ctx]
-	return e, ok
+	return context.WithValue(ctx, contextLogKey{}, l)
 }
 
 // Info is output info level Log
 func Info(ctx context.Context, message string) {
-	e, ok := getLogMap(ctx)
+	l, ok := ctx.Value(contextLogKey{}).(*Log)
 	if !ok {
-		labels := map[string]string{"hoge": "fuga"}
-		e = &Log{
-			Entry: Entry{
-				InsertID:         time.Now().String(),
-				Labels:           labels,
-				LogName:          "projects/metal-tile-dev1/logs/slog",
-				ReceiveTimestamp: time.Now(),
-				Resource: MonitoredResource{
-					Type:   "slog",
-					Labels: labels,
-				},
-				Severity:  "WARNING",
-				Timestamp: time.Now(),
-			},
-		}
-		go log(ctx)
+		panic(fmt.Sprintf("not contain log. message = %s", message))
 	}
-	e.Messages = append(e.Messages, message)
-	setLogMap(ctx, e)
+	l.Messages = append(l.Messages, message)
 }
 
-func log(ctx context.Context) {
-	fmt.Println("log start")
-	select {
-	case <-ctx.Done():
-		fmt.Println("log ctx.Done()")
-		e, ok := logMap[ctx]
-		if ok {
-			fmt.Println("log ctx.Done() logMap ok;")
-			encoder := json.NewEncoder(os.Stdout)
-			e.Entry.JSONPayload = e.Messages
-			if err := encoder.Encode(e.Entry); err != nil {
-				_, err := os.Stderr.WriteString(err.Error())
-				if err != nil {
-					panic(err)
-				}
+// Flush is ログを出力する
+func Flush(ctx context.Context) {
+	l, ok := ctx.Value(contextLogKey{}).(*Log)
+	if ok {
+		encoder := json.NewEncoder(os.Stdout)
+		l.Entry.JSONPayload = l.Messages
+		if err := encoder.Encode(l.Entry); err != nil {
+			_, err := os.Stdout.WriteString(err.Error())
+			if err != nil {
+				panic(err)
 			}
-			fmt.Println("log ctx.Done() logMap ok; done.")
 		}
 	}
-	fmt.Println("log end")
 }

@@ -50,12 +50,16 @@ func main() {
 }
 
 func workWithCancel(ctx context.Context, v string) {
+	ctx = slog.WithLog(ctx)
+	defer slog.Flush(ctx)
 	cctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	logger(cctx, fmt.Sprintf("Hello SLOG WithCancel. %v", v))
 }
 
 func workWithTimeout(ctx context.Context, v string) {
+	ctx = slog.WithLog(ctx)
+	defer slog.Flush(ctx)
 	cctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 	logger(cctx, fmt.Sprintf("Hello SLOG WithTimeout. %v", v))
@@ -63,6 +67,8 @@ func workWithTimeout(ctx context.Context, v string) {
 }
 
 func workWithDeadline(ctx context.Context, v string) {
+	ctx = slog.WithLog(ctx)
+	defer slog.Flush(ctx)
 	cctx, cancel := context.WithDeadline(ctx, time.Now().Add(2*time.Second))
 	defer cancel()
 	logger(cctx, fmt.Sprintf("Hello SLOG WithDadline. %v", v))
