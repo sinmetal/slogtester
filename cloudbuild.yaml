@@ -17,8 +17,8 @@ steps:
   args:
     - set
     - image
-    - deployment/land-node
-    - land-node=gcr.io/$PROJECT_ID/sinmetal/slogtester/$BRANCH_NAME:$COMMIT_SHA
+    - deployment/slogtester
+    - slogtester=gcr.io/$PROJECT_ID/sinmetal/slogtester/$BRANCH_NAME:$COMMIT_SHA
   env:
     - 'CLOUDSDK_COMPUTE_ZONE=us-central1-f'
     - 'CLOUDSDK_CONTAINER_CLUSTER=metal-tile'
