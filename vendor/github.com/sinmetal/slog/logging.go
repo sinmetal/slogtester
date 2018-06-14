@@ -8,29 +8,20 @@ import (
 	"time"
 )
 
-// Entry is Stackdriver Logging Entry
-type Entry struct {
-	InsertID         string            `json:"insertId"`
-	Severity         string            `json:"severity"`
-	Labels           map[string]string `json:"labels"`
-	LogName          string            `json:"logName"`
-	ReceiveTimestamp time.Time         `json:"receiveTimestamp"`
-	Resource         MonitoredResource `json:"resource"`
-	JSONPayload      interface{}       `json:"jsonPayload"`
-	Timestamp        time.Time         `json:"timestamp"`
+// StackdriverLogEntry is Stackdriver Logging Entry
+type StackdriverLogEntry struct {
+	Severity string `json:"severity"`
+	InsertID string `json:"insertId"`
+	LogName  string `json:"logName"`
+	Lines    []Line `json:"lines"`
 }
 
-// MonitoredResource is Log Resource
-// https://cloud.google.com/logging/docs/reference/v2/rest/v2/MonitoredResource
-type MonitoredResource struct {
-	Type   string            `json:"type"`
-	Labels map[string]string `json:"labels"`
-}
-
-// Log is Log Object
-type Log struct {
-	Entry    Entry `json:"entry"`
-	Messages []string
+// Line is Application Log Entry
+// Stackdriver Logging JSON Payload
+type Line struct {
+	Severity  string      `json:"severity"`
+	Body      interface{} `json:"body"`
+	Timestamp time.Time   `json:"timestamp"`
 }
 
 type contextLogKey struct{}
@@ -38,45 +29,77 @@ type contextLogKey struct{}
 // WithLog is context.ValueにLogを入れたものを返す
 // Log周期開始時に利用する
 func WithLog(ctx context.Context) context.Context {
-	labels := map[string]string{"hoge": "fuga"}
-	l := &Log{
-		Entry: Entry{
-			InsertID:         time.Now().String(),
-			Labels:           labels,
-			LogName:          "projects/metal-tile-dev1/logs/slog",
-			ReceiveTimestamp: time.Now(),
-			Resource: MonitoredResource{
-				Type:   "slog",
-				Labels: labels,
-			},
-			Severity:  "WARNING",
-			Timestamp: time.Now(),
-		},
+	_, ok := ctx.Value(contextLogKey{}).(*StackdriverLogEntry)
+	if ok {
+		return ctx
+	}
+
+	l := &StackdriverLogEntry{
+		Lines: []Line{},
 	}
 
 	return context.WithValue(ctx, contextLogKey{}, l)
 }
 
-// Info is output info level Log
-func Info(ctx context.Context, message string) {
-	l, ok := ctx.Value(contextLogKey{}).(*Log)
+// SetLogName is set LogName
+func SetLogName(ctx context.Context, logName string) {
+	l, ok := ctx.Value(contextLogKey{}).(*StackdriverLogEntry)
 	if !ok {
-		panic(fmt.Sprintf("not contain log. message = %s", message))
+		panic(fmt.Sprintf("not contain log. logName = %+v", logName))
 	}
-	l.Messages = append(l.Messages, message)
+	l.LogName = logName
+}
+
+// Info is output info level Log
+func Info(ctx context.Context, body interface{}) {
+	l, ok := ctx.Value(contextLogKey{}).(*StackdriverLogEntry)
+	if !ok {
+		panic(fmt.Sprintf("not contain log. body = %+v", body))
+	}
+	l.Severity = maxSeverity(l.Severity, "INFO")
+	l.Lines = append(l.Lines, Line{
+		Severity:  "INFO",
+		Body:      body,
+		Timestamp: time.Now(),
+	})
 }
 
 // Flush is ログを出力する
 func Flush(ctx context.Context) {
-	l, ok := ctx.Value(contextLogKey{}).(*Log)
+	l, ok := ctx.Value(contextLogKey{}).(*StackdriverLogEntry)
 	if ok {
 		encoder := json.NewEncoder(os.Stdout)
-		l.Entry.JSONPayload = l.Messages
-		if err := encoder.Encode(l.Entry); err != nil {
+		if err := encoder.Encode(l); err != nil {
 			_, err := os.Stdout.WriteString(err.Error())
 			if err != nil {
 				panic(err)
 			}
 		}
 	}
+}
+
+func maxSeverity(severities ...string) (severity string) {
+	severityLevel := make(map[string]int)
+	severityLevel["DEFAULT"] = 0
+	severityLevel["DEBUG"] = 100
+	severityLevel["INFO"] = 200
+	severityLevel["NOTICE"] = 300
+	severityLevel["WARNING"] = 400
+	severityLevel["ERROR"] = 500
+	severityLevel["CRITICAL"] = 600
+	severityLevel["ALERT"] = 700
+	severityLevel["EMERGENCY"] = 800
+
+	level := -1
+	for _, s := range severities {
+		lv, ok := severityLevel[s]
+		if !ok {
+			lv = -1
+		}
+		if lv > level {
+			severity = s
+		}
+	}
+
+	return severity
 }

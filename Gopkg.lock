@@ -40,7 +40,7 @@
   branch = "feature/id/1"
   name = "github.com/sinmetal/slog"
   packages = ["."]
-  revision = "3f9e77b6da3055ada4885441e24636aec4b33401"
+  revision = "95c100106cc1f61efae0965bcd4be0637d6b5900"
 
 [[projects]]
   name = "go.opencensus.io"

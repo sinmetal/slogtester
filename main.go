@@ -52,29 +52,59 @@ func main() {
 func workWithCancel(ctx context.Context, v string) {
 	ctx = slog.WithLog(ctx)
 	defer slog.Flush(ctx)
+	slog.SetLogName(ctx, "WithCancel")
 	cctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	s := struct {
+		Key   string
+		Value string
+	}{
+		Key:   "message",
+		Value: v,
+	}
 	logger(cctx, fmt.Sprintf("Hello SLOG WithCancel. %v", v))
+	logger(cctx, s)
 }
 
 func workWithTimeout(ctx context.Context, v string) {
 	ctx = slog.WithLog(ctx)
 	defer slog.Flush(ctx)
+	slog.SetLogName(ctx, "WithTimeout")
 	cctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
+
+	s := struct {
+		Key   string
+		Value string
+	}{
+		Key:   "message",
+		Value: v,
+	}
 	logger(cctx, fmt.Sprintf("Hello SLOG WithTimeout. %v", v))
+	logger(cctx, s)
 	time.Sleep(3 * time.Second)
 }
 
 func workWithDeadline(ctx context.Context, v string) {
 	ctx = slog.WithLog(ctx)
 	defer slog.Flush(ctx)
+	slog.SetLogName(ctx, "WithDeadline")
 	cctx, cancel := context.WithDeadline(ctx, time.Now().Add(2*time.Second))
 	defer cancel()
+
+	s := struct {
+		Key   string
+		Value string
+	}{
+		Key:   "message",
+		Value: v,
+	}
 	logger(cctx, fmt.Sprintf("Hello SLOG WithDadline. %v", v))
+	logger(cctx, s)
 	time.Sleep(3 * time.Second)
 }
 
-func logger(ctx context.Context, msg string) {
-	slog.Info(ctx, msg)
+func logger(ctx context.Context, body interface{}) {
+	slog.Info(ctx, body)
 }
