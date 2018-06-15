@@ -56,15 +56,8 @@ func workWithCancel(ctx context.Context, v string) {
 	cctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	s := struct {
-		Key   string
-		Value string
-	}{
-		Key:   "message",
-		Value: v,
-	}
-	logger(cctx, fmt.Sprintf("Hello SLOG WithCancel. %v", v))
-	logger(cctx, s)
+	logger(cctx, "workWithCancel", fmt.Sprintf("Hello SLOG WithCancel. %v", v))
+	logger(cctx, "workWithCancel", slog.KV{"message", v})
 }
 
 func workWithTimeout(ctx context.Context, v string) {
@@ -74,15 +67,8 @@ func workWithTimeout(ctx context.Context, v string) {
 	cctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
-	s := struct {
-		Key   string
-		Value string
-	}{
-		Key:   "message",
-		Value: v,
-	}
-	logger(cctx, fmt.Sprintf("Hello SLOG WithTimeout. %v", v))
-	logger(cctx, s)
+	logger(cctx, "workWithTimeout_hello", fmt.Sprintf("Hello SLOG WithTimeout. %v", v))
+	logger(cctx, "workWithTimeout_message", slog.KV{"message", v})
 	time.Sleep(3 * time.Second)
 }
 
@@ -100,11 +86,11 @@ func workWithDeadline(ctx context.Context, v string) {
 		Key:   "message",
 		Value: v,
 	}
-	logger(cctx, fmt.Sprintf("Hello SLOG WithDadline. %v", v))
-	logger(cctx, s)
+	logger(cctx, "workWithDeadline", fmt.Sprintf("Hello SLOG WithDadline. %v", v))
+	logger(cctx, "workWithDeadline", s)
 	time.Sleep(3 * time.Second)
 }
 
-func logger(ctx context.Context, body interface{}) {
-	slog.Info(ctx, body)
+func logger(ctx context.Context, name string, body interface{}) {
+	slog.Info(ctx, name, body)
 }

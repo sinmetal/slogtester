@@ -19,9 +19,16 @@ type StackdriverLogEntry struct {
 // Line is Application Log Entry
 // Stackdriver Logging JSON Payload
 type Line struct {
-	Severity  string      `json:"severity"`
-	Body      interface{} `json:"body"`
-	Timestamp time.Time   `json:"timestamp"`
+	Severity  string    `json:"severity"`
+	Name      string    `json:"name"`
+	Body      string    `json:"body"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// KV is Line Bodyに利用するKey Value struct
+type KV struct {
+	Key   string      `json:"key"`
+	Value interface{} `json:"value"`
 }
 
 type contextLogKey struct{}
@@ -51,15 +58,20 @@ func SetLogName(ctx context.Context, logName string) {
 }
 
 // Info is output info level Log
-func Info(ctx context.Context, body interface{}) {
+func Info(ctx context.Context, name string, body interface{}) {
 	l, ok := ctx.Value(contextLogKey{}).(*StackdriverLogEntry)
 	if !ok {
 		panic(fmt.Sprintf("not contain log. body = %+v", body))
 	}
 	l.Severity = maxSeverity(l.Severity, "INFO")
+	b, err := json.Marshal(body)
+	if err != nil {
+		panic(err)
+	}
 	l.Lines = append(l.Lines, Line{
 		Severity:  "INFO",
-		Body:      body,
+		Name:      name,
+		Body:      string(b),
 		Timestamp: time.Now(),
 	})
 }
