@@ -69,6 +69,7 @@ func workWithTimeout(ctx context.Context, v string) {
 
 	logger(cctx, "workWithTimeout_hello", fmt.Sprintf("Hello SLOG WithTimeout. %v", v))
 	logger(cctx, "workWithTimeout_message", slog.KV{"message", v})
+	logger(cctx, "workWithTimeout_int", slog.KV{"int", 1})
 	time.Sleep(3 * time.Second)
 }
 
