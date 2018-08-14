@@ -3,7 +3,7 @@ steps:
   args: ['test', './...']
   env: ['PROJECT_ROOT=github.com/sinmetal/slogtester']
 - name: 'gcr.io/cloud-builders/go'
-  args: ['install', '-race', '-a', '-ldflags', 'github.com/sinmetal/slogtester']
+  args: ['install', '-race', '-a', '-ldflags', '-s', '-installsuffix', 'github.com/sinmetal/slogtester']
   env: [
     'PROJECT_ROOT=github.com/sinmetal/slogtester',
     'GOOS=linux'
