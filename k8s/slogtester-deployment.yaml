@@ -1,15 +1,18 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    name: slogtester
   name: slogtester
+  labels:
+    app: slogtester
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: slogtester
   template:
     metadata:
       labels:
-        name: slogtester
+        app: slogtester
     spec:
       containers:
       - image: gcr.io/metal-tile-dev1/sinmetal/slogtester/master:latest
